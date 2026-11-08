@@ -1,0 +1,19 @@
+
+{
+  "playlist": [
+    {
+      "id": "lofi-1",
+      "title": "Lofi Gaming Mix",
+      "artist": "SomaFM Groove Salad",
+      "url": "https://ice1.somafm.com/groovesalad-128-mp3",
+      "cover": "https://placehold.co/500x500/171d36/ffffff?text=Lofi+Gaming"
+    },
+    {
+      "id": "lofi-2",
+      "title": "Chill Gaming Beats",
+      "artist": "SomaFM DEF CON",
+      "url": "https://ice1.somafm.com/defcon-128-mp3",
+      "cover": "https://placehold.co/500x500/171d36/ffffff?text=Chill+Beats"
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b1b">
+  <title>lunaEclipse ☾ | Gaming & Entertainment</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+<div id="app" :data-theme="theme">
+
+  <header class="site-header">
+    <a href="#home" class="brand">lunaEclipse<span>☾</span></a>
+
+    <nav class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#music">Lofi Music</a>
+      <a href="#jokes">Jokes</a>
+      <a href="#videos">YouTube</a>
+      <a href="#games">Mini Games</a>
+      <a href="#reviews">Reviews</a>
+    </nav>
+
+    <button class="theme-button" @click="toggleTheme">
+      {{ theme === 'dark' ? '☀ Golden' : '☾ Midnight' }}
+    </button>
+  </header>
+
+  <main>
+    <section class="hero section" id="home">
+      <div class="hero-copy">
+        <span class="eyebrow">YOUR DIGITAL PLAYGROUND</span>
+        <h1>Explore the World of <span>Gaming &amp; Fun.</span></h1>
+        <p>Gaming, entertainment and fun — all in one place.</p>
+        <a href="#games" class="primary-button">Explore Now <span>→</span></a>
+      </div>
+
+      <div class="hero-moon" aria-hidden="true">
+        <div class="moon-glow"></div>
+        <div class="moon-orbit"></div>
+        <div class="moon-symbol">☾</div>
+      </div>
+    </section>
+
+    <!-- MUSIC -->
+    <section class="section" id="music">
+      <div class="section-heading">
+        <span class="eyebrow">RELAX · FOCUS · REPEAT</span>
+        <h2>🎧 Gaming Lofi Music</h2>
+        <p>Relax, focus and enjoy your favourite sounds.</p>
+      </div>
+
+      <div class="music-layout">
+        <div class="panel music-player">
+          <div class="album-art">
+            <img :src="currentTrack.cover || defaultCover" alt="Music artwork">
+            <span>☾</span>
+          </div>
+
+          <div class="track-info">
+            <span class="eyebrow">NOW PLAYING</span>
+            <h3>{{ currentTrack.title || 'Choose a track' }}</h3>
+            <p>{{ currentTrack.artist || 'lunaEclipse Music' }}</p>
+          </div>
+
+          <audio ref="audio" :src="audioUrl"
+            @timeupdate="updateTime"
+            @loadedmetadata="updateDuration"
+            @ended="nextTrack"
+            @error="handleAudioError"></audio>
+
+          <p class="error-message" v-if="musicError">{{ musicError }}</p>
+
+          <div v-if="musicMode === 'audio'">
+            <div class="timeline">
+              <span>{{ formatTime(currentTime) }}</span>
+              <input type="range" min="0" :max="duration || 0" step="1"
+                v-model.number="currentTime" @input="seekAudio">
+              <span>{{ duration ? formatTime(duration) : 'LIVE' }}</span>
+            </div>
+
+            <div class="music-controls">
+              <button @click="previousTrack">⏮</button>
+              <button class="play-button" @click="togglePlay">
+                {{ isPlaying ? 'Ⅱ' : '▶' }}
+              </button>
+              <button @click="nextTrack">⏭</button>
+            </div>
+
+            <div class="volume-control">
+              <span>🔈</span>
+              <input type="range" min="0" max="1" step="0.01"
+                v-model.number="volume" @input="changeVolume">
+              <span>🔊</span>
+            </div>
+          </div>
+
+          <div class="music-embed" v-else>
+            <iframe :src="embedUrl" title="External music player"
+              allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <p>Use the controls in the embedded player.</p>
+          </div>
+        </div>
+
+        <div class="panel playlist-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Gaming Lofi Playlist</h3>
+              <p>{{ playlist.length }} tracks</p>
+            </div>
+            <span class="music-note">♫</span>
+          </div>
+
+          <div class="playlist">
+            <button class="playlist-track"
+              v-for="(track, index) in playlist" :key="track.id"
+              :class="{ active: currentIndex === index }"
+              @click="selectTrack(index)">
+              <img :src="track.cover || defaultCover" alt="">
+              <span class="track-label">
+                <strong>{{ track.title }}</strong>
+                <small>{{ track.artist }}</small>
+              </span>
+              <b>{{ currentIndex === index && isPlaying ? 'Ⅱ' : '▶' }}</b>
+            </button>
+          </div>
+
+          <div class="add-music">
+            <h3>Add Your Own Music</h3>
+            <p>Use a direct audio link, YouTube link or Spotify link.</p>
+            <input v-model="musicTitle" placeholder="Music title (optional)">
+            <input v-model="musicLink" placeholder="Paste music URL">
+            <button class="primary-button full-button" @click="addMusic">
+              + Add Music
+            </button>
+            <label class="upload-button">
+              ↑ Upload Audio
+              <input type="file" accept="audio/*" @change="uploadMusic" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- JOKES -->
+    <section class="section" id="jokes">
+      <div class="section-heading">
+        <span class="eyebrow">A LITTLE LAUGHTER</span>
+        <h2>😂 Joke Corner</h2>
+        <p>Take a break and enjoy a random joke.</p>
+      </div>
+
+      <div class="panel joke-card">
+        <div class="joke-face">😆</div>
+        <span class="eyebrow">RANDOM JOKE</span>
+        <p>{{ joke }}</p>
+        <button class="primary-button" @click="getJoke" :disabled="jokeLoading">
+          {{ jokeLoading ? 'Loading...' : 'Get Another Joke ↻' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- YOUTUBE -->
+    <section class="section" id="videos">
+      <div class="section-heading">
+        <span class="eyebrow">WATCH SOMETHING FUN</span>
+        <h2>▶ YouTube Videos</h2>
+        <p>Search for gaming videos and entertainment.</p>
+      </div>
+
+      <form class="search-bar" @submit.prevent="searchVideos">
+        <input v-model="videoQuery" placeholder="Search YouTube videos...">
+        <button class="primary-button">Search</button>
+      </form>
+
+      <p class="status-text">{{ videoStatus }}</p>
+
+      <div class="video-grid">
+        <article class="panel video-card" v-for="video in videos"
+          :key="video.id.videoId">
+          <img
+            :src="video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default.url"
+            :alt="video.snippet.title">
+          <div class="card-content">
+            <h3>{{ video.snippet.title }}</h3>
+            <p>{{ video.snippet.channelTitle }}</p>
+            <button class="secondary-button full-button"
+              @click="watchVideo(video.id.videoId)">
+              Watch Video →
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <div class="pagination" v-if="videos.length">
+        <button class="secondary-button" @click="previousVideos"
+          :disabled="!previousToken">Previous</button>
+        <span>Page {{ videoPage }}</span>
+        <button class="secondary-button" @click="nextVideos"
+          :disabled="!nextToken">Next</button>
+      </div>
+    </section>
+
+    <!-- MINI GAMES -->
+    <section class="section" id="games">
+      <div class="section-heading">
+        <span class="eyebrow">READY TO PLAY?</span>
+        <h2>🎮 Mini Games</h2>
+        <p>Choose a game and play it directly inside lunaEclipse.</p>
+      </div>
+
+      <div class="game-toolbar">
+        <input v-model="gameQuery" placeholder="Search games...">
+        <select v-model="gameCategory">
+          <option value="All">All Categories</option>
+          <option v-for="category in gameCategories" :key="category"
+            :value="category">{{ category }}</option>
+        </select>
+      </div>
+
+      <p class="status-text">{{ gameStatus }}</p>
+
+      <div class="game-grid">
+        <article class="panel game-card"
+          v-for="game in paginatedGames" :key="game.slug">
+
+          <div class="game-thumbnail">
+            <img v-if="game.image"
+              :src="game.image"
+              :alt="game.title + ' thumbnail'"
+              loading="lazy"
+              @error="handleGameImageError(game)">
+
+            <span v-else class="thumbnail-emoji">{{ game.emoji }}</span>
+            <span class="thumbnail-tag">{{ game.category }}</span>
+          </div>
+
+          <div class="card-content">
+            <h3>{{ game.title }}</h3>
+            <p>{{ game.description }}</p>
+            <button class="primary-button full-button" @click="playGame(game)">
+              ▶ Play Now
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <p v-if="!paginatedGames.length" class="empty-state">
+        No games found. Try another search or category.
+      </p>
+
+      <div class="pagination" v-if="filteredGames.length">
+        <button class="secondary-button" @click="previousGames"
+          :disabled="gamePage === 1">Previous</button>
+        <span>Page {{ gamePage }} / {{ totalGamePages }}</span>
+        <button class="secondary-button" @click="nextGames"
+          :disabled="gamePage >= totalGamePages">Next</button>
+      </div>
+
+      <p class="game-credit">
+        Games are provided by
+        <a href="https://playbolt.app/" target="_blank"
+          rel="noopener noreferrer">PlayBolt</a>.
+      </p>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section" id="reviews">
+      <div class="section-heading">
+        <span class="eyebrow">YOUR VOICE MATTERS</span>
+        <h2>⭐ Reviews</h2>
+        <p>Share your experience with lunaEclipse.</p>
+      </div>
+
+      <div class="review-layout">
+        <form class="panel review-form" @submit.prevent="submitReview">
+          <h3>Write a Review</h3>
+          <input v-model.trim="reviewName" placeholder="Your name" required>
+
+          <label for="rating">Your rating</label>
+          <select id="rating" v-model.number="reviewRating">
+            <option :value="5">★★★★★ Excellent</option>
+            <option :value="4">★★★★ Very Good</option>
+            <option :value="3">★★★ Good</option>
+            <option :value="2">★★ Fair</option>
+            <option :value="1">★ Poor</option>
+          </select>
+
+          <textarea v-model.trim="reviewText" rows="5"
+            placeholder="Write your review..." required></textarea>
+
+          <button class="primary-button full-button">Submit Review</button>
+        </form>
+
+        <div class="review-list">
+          <article class="panel review-card"
+            v-for="review in reviews" :key="review.id">
+            <div class="review-heading">
+              <strong>{{ review.name }}</strong>
+              <span>{{ '★'.repeat(review.rating) }}</span>
+            </div>
+            <p>{{ review.text }}</p>
+            <small>{{ review.date }}</small>
+          </article>
+
+          <p v-if="!reviews.length" class="empty-state">
+            No reviews yet. Be the first to leave one!
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- GAME PLAYER -->
+  <div class="game-modal" v-if="gameModalOpen" @click.self="closeGame">
+    <div class="game-modal-box">
+      <div class="game-modal-header">
+        <div>
+          <span class="eyebrow">NOW PLAYING ON LUNAECLIPSE</span>
+          <h2>{{ selectedGame.title }}</h2>
+        </div>
+        <div class="game-actions">
+          <button @click="fullscreenGame">⛶ Fullscreen</button>
+          <button @click="closeGame">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="game-frame-wrap">
+        <iframe ref="gameFrame" :src="gameFrameUrl"
+          :title="selectedGame.title || 'PlayBolt game'"
+          allow="autoplay; fullscreen; gamepad"
+          allowfullscreen></iframe>
+      </div>
+
+      <p class="game-modal-credit">
+        Game hosted by <a href="https://playbolt.app/" target="_blank"
+          rel="noopener noreferrer">PlayBolt</a>.
+      </p>
+    </div>
+  </div>
+
+  <!-- YOUTUBE MODAL -->
+  <div class="video-modal" v-if="videoModalOpen" @click.self="closeVideo">
+    <div class="video-modal-box">
+      <button class="modal-close" @click="closeVideo">×</button>
+      <iframe :src="videoEmbedUrl" title="YouTube video"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <a href="#home" class="brand">lunaEclipse<span>☾</span></a>
+    <p>Gaming, entertainment and fun — all in one place.</p>
+    <small>© {{ year }} lunaEclipse. All rights reserved.</small>
+  </footer>
+
+</div>
+</body>
+</html>
